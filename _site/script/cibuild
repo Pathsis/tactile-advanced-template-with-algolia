@@ -1,7 +1,0 @@
-#!/bin/sh
-
-set -e
-
-bundle exec jekyll build
-bundle exec rubocop -D --config .rubocop.yml
-gem build jekyll-theme-tactile.gemspec

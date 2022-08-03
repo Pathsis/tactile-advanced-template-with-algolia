@@ -1,3 +1,11 @@
+
+![img-demo](img/readme/1.png)
+
+![img-demo](img/readme/2.png)
+
+See the [demmo](https://pathos.page/).
+
+
 1. A blog on Github Page。**若Folk，请将我的全部文章移除**。
 
 2. 你需要知道如何删除html和css的注释。对于html,删除`<!-- -->`直到其所包含的代码的高亮正常。对于css，删除`/*`和`*/`直到其所包含的代码的高亮正常。
