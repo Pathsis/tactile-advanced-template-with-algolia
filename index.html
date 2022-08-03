@@ -1,0 +1,35 @@
+---
+layout: default
+---
+
+    {%- if site.posts.size > 0 -%}
+    
+      <ul class="post-header">
+        {%- for post in paginator.posts -%}
+        
+          <h1>
+            <a class="post-header" href="{{ post.url | relative_url }}">{{ post.title }}</a>
+          </h1>
+          {%- assign date_format = site.date_format | default: "%b %-d, %Y" -%}
+          <div class="post-meta">
+            <time datetime="{{ post.date | date_to_xmlschema }}" itemprop="datePublished">{{ post.date | date: "%Y-%m-%d" }}</time>
+            {%- if post.last_modified_at -%}
+              （最近更新：<time datetime="{{ post.last_modified_at | date_to_xmlschema }}" itemprop="datePublished">{{ post.last_modified_at | date: "%Y-%m-%d" }}</time>）
+            {%- endif -%}
+          </div>
+          <p>{{ post.excerpt }}</p>
+        
+        {%- endfor -%}
+      </ul>
+      
+    {%- endif -%}
+    <div class="pagination">
+      {%- if paginator.next_page -%}
+        <span class="next"><a class="paginator" href="{{ paginator.next_page_path }}"> &larr;&nbsp;较早的文章</a></span>
+      {%- endif -%}
+      {%- if paginator.previous_page -%}
+        <span class="previous"><a class="paginator" href="{{ paginator.previous_page_path }}">较近的文章&nbsp;&rarr;</a></span>
+      {%- endif -%}
+    </div>
+  
+  

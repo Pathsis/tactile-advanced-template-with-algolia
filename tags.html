@@ -1,0 +1,32 @@
+---
+layout: default
+title: 标签
+permalink: /tags/
+---
+
+<p>点击下面的标签，会跳转到相应的文章列表；点击浏览器返回键，会返回到顶部。</p>
+
+<ul class="tag-cloud">
+{% for tag in site.tags %}
+  <li style="font-size: {{ tag | last | size | times: 100 | divided_by: site.tags.size | plus: 70  }}%">
+    <a href="#{{ tag | first | slugize }}">
+      {{ tag | first }}
+    </a>
+  </li>
+{% endfor %}
+</ul>
+
+<div id="archives">
+  {%- for tag in site.tags -%}
+  {%- capture name -%}{{ tag | first }}{%- endcapture -%}
+  <h3 id="{{ name }}">{{ name | upcase }}</h3>
+  {%- for post in site.tags[name] -%}
+    <article class="post-item" id="results-container">
+      
+      <h5 class="post-item-title">
+        <a href="{{ post.url }}">{{ post.title | escape }}</a>
+      </h5> 
+    </article>
+  {%- endfor -%}
+{%- endfor -%}
+</div>

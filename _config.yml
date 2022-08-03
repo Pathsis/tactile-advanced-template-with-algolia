@@ -1,0 +1,29 @@
+title: tactile
+description: 一个jekyll博客
+show_downloads: false
+permalink: /:title:output_ext
+timezone: Asia/Shanghai
+author: 
+theme: jekyll-theme-tactile
+baseurl:
+url: https://your-domain-name.com
+incremental: true
+plugins:
+  - jekyll-feed
+  - jekyll-paginate
+  - jekyll-sitemap
+  - jekyll-redirect-from
+  - jekyll-seo-tag
+  - jekyll/tagging
+  - jekyll-tagging-related_posts
+sass:
+    style: compressed
+paginate: 10
+paginate_path: "/page/:num"
+
+algolia:
+  application_id: 
+  index_name: 
+  search_only_api_key: 
+  
+

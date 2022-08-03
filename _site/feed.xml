@@ -1,0 +1,654 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.9.2">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2022-08-04T01:43:48+08:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">tactile</title><subtitle>一个jekyll博客</subtitle><entry><title type="html">为Vercel上的Jekyll网站添加Algolia搜索功能</title><link href="http://localhost:4000/algolia-jekyll-blog.html" rel="alternate" type="text/html" title="为Vercel上的Jekyll网站添加Algolia搜索功能" /><published>2022-07-16T00:00:00+08:00</published><updated>2022-07-16T00:00:00+08:00</updated><id>http://localhost:4000/algolia-jekyll-blog</id><content type="html" xml:base="http://localhost:4000/algolia-jekyll-blog.html"><![CDATA[<h2 id="0前言">0.前言</h2>
+
+<p>本文旨在帮助那些想要在Vercel上的Jekyll网站使用Algolia功能的人，一旦配置成功，将不再需要依赖本地Jekyll环境。如果你已经探索良久，那么你或许需要<a href="/algolia-jekyll-blog.html#4结语">快速抵达关键要点</a>。</p>
+
+<h2 id="1为jekyll添加简单的本地搜索功能">1.为jekyll添加简单的本地搜索功能</h2>
+
+<p>如果只是想要拥有一个简单的搜索功能，建议使用<a href="https://github.com/christian-fei/Simple-Jekyll-Search">simple-jekyll-search</a>这个插件。这个插件可以本地运行，可以搜索标题、标签、时间、网址。Github上虽然也提供了全文搜索的选项，但我没有成功，也不推荐使用，因为可能会导致性能问题。</p>
+
+<p>简单的配置如下：</p>
+
+<p>第一，在根目录新建一个名为search.json的文件，内容如下：</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="w">
+</span><span class="err">---</span><span class="w">
+</span><span class="err">layout:</span><span class="w"> </span><span class="err">none</span><span class="w">
+</span><span class="err">---</span><span class="w">
+</span><span class="p">[</span><span class="w">
+  </span><span class="p">{</span><span class="err">%</span><span class="w"> </span><span class="err">for</span><span class="w"> </span><span class="err">post</span><span class="w"> </span><span class="err">in</span><span class="w"> </span><span class="err">site.posts</span><span class="w"> </span><span class="err">%</span><span class="p">}</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+      </span><span class="nl">"title"</span><span class="w">    </span><span class="p">:</span><span class="w"> </span><span class="s2">"{{ post.title | escape }}"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"category"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">"{{ post.category }}"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"tags"</span><span class="w">     </span><span class="p">:</span><span class="w"> </span><span class="s2">"{{ post.tags | join: ', ' }}"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"url"</span><span class="w">      </span><span class="p">:</span><span class="w"> </span><span class="s2">"{{ site.baseurl }}{{ post.url }}"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"date"</span><span class="w">     </span><span class="p">:</span><span class="w"> </span><span class="s2">"{{ post.date }}"</span><span class="p">,</span><span class="w">
+      </span><span class="nl">"excerpt"</span><span class="w">  </span><span class="p">:</span><span class="w"> </span><span class="s2">"{{ post.excerpt }}"</span><span class="w">
+    
+    </span><span class="p">}</span><span class="w"> </span><span class="p">{</span><span class="err">%</span><span class="w"> </span><span class="err">unless</span><span class="w"> </span><span class="err">forloop.last</span><span class="w"> </span><span class="err">%</span><span class="p">},{</span><span class="err">%</span><span class="w"> </span><span class="err">endunless</span><span class="w"> </span><span class="err">%</span><span class="p">}</span><span class="w">
+  </span><span class="p">{</span><span class="err">%</span><span class="w"> </span><span class="err">endfor</span><span class="w"> </span><span class="err">%</span><span class="p">}</span><span class="w">
+</span><span class="p">]</span><span class="w">
+
+</span></code></pre></div></div>
+
+<p>第二，在根目录新建search.md文件，内容如下：</p>
+
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>---
+layout: default
+title: 搜索
+permalink: /search/
+---
+<span class="c">&lt;!-- HTML elements for search --&gt;</span>
+<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"text"</span> <span class="na">id=</span><span class="s">"search-input"</span> <span class="na">placeholder=</span><span class="s">"搜索：标题、标签、时间、摘要"</span> <span class="na">style=</span><span class="s">"
+    transition: box-shadow .4s ease,background .4s ease,-webkit-box-shadow .4s ease;
+    display: inline-block;
+    margin: 0 12px 12px 0;
+    background: #f5f5f500;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 6px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    transition: all 0.23s ease-in-out 0s;
+    line-height: 1.7;
+    color: #202020;
+    max-width: 100%;
+    margin-bottom: 15px;
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+    line-height: 1.7;
+    width: 325px;
+    "</span><span class="nt">/&gt;</span>
+
+<span class="nt">&lt;ul</span> <span class="na">id=</span><span class="s">"results-container"</span><span class="nt">&gt;&lt;/ul&gt;</span>
+
+<span class="c">&lt;!-- script pointing to jekyll-search.js --&gt;</span>
+
+<span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"/js/simple-jekyll-search.min.js"</span><span class="nt">&gt;&lt;/script&gt;</span>
+
+<span class="nt">&lt;script&gt;</span>
+<span class="nx">SimpleJekyllSearch</span><span class="p">({</span>
+    <span class="na">searchInput</span><span class="p">:</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="dl">'</span><span class="s1">search-input</span><span class="dl">'</span><span class="p">),</span>
+    <span class="na">resultsContainer</span><span class="p">:</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="dl">'</span><span class="s1">results-container</span><span class="dl">'</span><span class="p">),</span>
+    <span class="na">json</span><span class="p">:</span> <span class="dl">'</span><span class="s1">/search.json</span><span class="dl">'</span><span class="p">,</span>
+    <span class="na">searchResultTemplate</span><span class="p">:</span> <span class="dl">'</span><span class="s1">&lt;li&gt;&lt;a href="{url}" title="{desc}"&gt;{title}&lt;/a&gt;&lt;/li&gt;</span><span class="dl">'</span><span class="p">,</span>
+    <span class="na">noResultsText</span><span class="p">:</span> <span class="dl">'</span><span class="s1">没有搜索到文章</span><span class="dl">'</span><span class="p">,</span>
+    <span class="na">limit</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="na">fuzzy</span><span class="p">:</span> <span class="kc">false</span>
+  <span class="p">})</span>
+<span class="nt">&lt;/script&gt;</span>
+</code></pre></div></div>
+
+<p>当然，您也可以将这个文件下载下来，复制在本地的js文件中（如没有则新建），并将<code class="language-plaintext highlighter-rouge">https://unpkg.com/simple-jekyll-search@1.10.0/dest/simple-jekyll-search.min.js</code>替换为<code class="language-plaintext highlighter-rouge">/js/simple-jekyll-search.min.js</code>，以实现完全的本地化。</p>
+
+<p>此时，访问<code class="language-plaintext highlighter-rouge">your_domain_name/search/</code>，就能看到搜索页面了。</p>
+
+<p>可以将这个页面添加到导航。在_includes中新建一个navigation.html文件，在其中添加内容：</p>
+
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;nav&gt;</span>
+  <span class="nt">&lt;a</span> <span class="na">class=</span><span class="s">"navi"</span> <span class="na">href=</span><span class="s">"/"</span><span class="nt">&gt;</span>主页<span class="nt">&lt;/a&gt;</span>
+  <span class="nt">&lt;a</span> <span class="na">class=</span><span class="s">"navi"</span> <span class="na">href=</span><span class="s">"/about/"</span><span class="nt">&gt;</span>关于<span class="nt">&lt;/a&gt;</span>
+  <span class="nt">&lt;a</span> <span class="na">class=</span><span class="s">"navi"</span> <span class="na">href=</span><span class="s">"/tags/"</span><span class="nt">&gt;</span>标签<span class="nt">&lt;/a&gt;</span>
+  <span class="nt">&lt;a</span> <span class="na">class=</span><span class="s">"navi"</span> <span class="na">href=</span><span class="s">"/archive/"</span><span class="nt">&gt;</span>归档<span class="nt">&lt;/a&gt;</span>
+  <span class="nt">&lt;a</span> <span class="na">class=</span><span class="s">"navi"</span> <span class="na">href=</span><span class="s">"/search/"</span><span class="nt">&gt;</span>搜索<span class="nt">&lt;/a&gt;</span>
+  <span class="nt">&lt;/nav&gt;</span>
+</code></pre></div></div>
+
+<p>请注意，最后一项导航项才是我们要添加的，其他的项目是通常会有的，如果它们与你的代码冲突或无关，请忽略它们。</p>
+
+<p>以下为演示效果：</p>
+
+<p><img src="https://res.cloudinary.com/mkyos/image/upload/v1657967848/vercel-jekyll/3_p6qsii.gif" alt="local search" /></p>
+
+<h2 id="2在netlify上使用algolia">2.在Netlify上使用Algolia</h2>
+
+<p>假设你在Netlify上部署了一个网站，由于两者有密切的合作，你会更方面使用Algolia。</p>
+
+<p>先按照<a href="https://www.algolia.com/doc/tools/crawler/netlify-plugin/quick-start/">官方文档</a>操作。</p>
+
+<p>当你到达<a href="https://www.algolia.com/doc/tools/crawler/netlify-plugin/quick-start/#:~:text=The%20plugin%20is%20now%20installed%20and%20ready%20to%20index%20your%20site.">这一步</a>的时候，如下图所示，请注意，Algolia所给的代码片段对新手很不友好，因为缺少一个HTML选择器，以至于只把这段代码粘贴到我们的模版文件中是不会显示的。</p>
+
+<p><img src="https://www.algolia.com/doc/assets/images/tools/crawler/guides/netlify/installed-c5b8f621.jpg" alt="algolia html" /></p>
+
+<p>在原有代码的最上方添加选择器代码：</p>
+
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">"search"</span><span class="nt">&gt;&lt;/div&gt;</span>
+</code></pre></div></div>
+<p>并将全部代码复制到你想显示Algolia的搜索框的任何网页的模版之中。假设你想在你的archive模版中显示，则将其放置在最顶端。假设你想使之单独成页，请在根目录新建search.md文件，将这段代码粘贴进去，并按照之前的方法为之添加导航。</p>
+
+<p>注意，其中的apikey是你的 Search-Only API Key。</p>
+
+<p>其效果如下：</p>
+
+<p><img src="https://res.cloudinary.com/mkyos/image/upload/v1657967845/vercel-jekyll/5_j9teoc.gif" alt="algolia netlify" /></p>
+
+<h2 id="3在vercel上使用algolia">3.在Vercel上使用Algolia</h2>
+
+<p>假如你像上面那样使用Netlify创建了一个网站，且安装了Algolia的插件，则你将自动获得Algolia的一个免费Application，其配额为20K请求与20K记录。我建议你使用这个Application<strong>再</strong>创建一个index，以使Vercel上的网站享用这个配额。它比不通过Netlify申请的多一倍。</p>
+
+<p>你只需要在Netlifty上随便创建一个网站，并在安装完Algolia的插件后，不再管它。回到Vercel，假设你想为运行在Vercel上的Jekyll添加搜索，你需要调价Jekyll-algolia插件。这个插件与Netlify的不同，其显示效果也不同，看你喜欢哪个了。喜欢Netlify的，则可以满足于上一节的操作。</p>
+
+<p>因为在Netlify比Vercel的访问速度稍微慢些，特别是内地，所以我选择了Vercel。</p>
+
+<p>先从Algolia的<a href="https://community.algolia.com/jekyll-algolia/getting-started.html">官方文档</a>开始。</p>
+
+<h3 id="31配置gemfile">3.1配置Gemfile</h3>
+
+<p>假设你的Jekyll网站本来运行良好，你需要在你的Gemfile文件的末尾添加如下内容：</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">source</span> <span class="s1">'https://rubygems.org'</span>
+
+<span class="n">gem</span> <span class="s1">'jekyll'</span><span class="p">,</span> <span class="s1">'~&gt; 3.6'</span>
+
+<span class="n">group</span> <span class="ss">:jekyll_plugins</span> <span class="k">do</span>
+  <span class="n">gem</span> <span class="s1">'jekyll-algolia'</span>
+<span class="k">end</span>
+</code></pre></div></div>
+<p>请注意，如果你的Gemfile中本来就有<code class="language-plaintext highlighter-rouge">group :jekyll_plugins do</code>的片段，请将<code class="language-plaintext highlighter-rouge">gem 'jekyll-algolia'</code><strong>添加</strong>进去即可。</p>
+
+<p>假如你的你的Gemfile中本来没有<code class="language-plaintext highlighter-rouge">group :jekyll_plugins do</code>的片段，你需要在<strong>末尾</strong>完整条件以上代码。</p>
+
+<p>比如我的Gemfile中的内容原本是：</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># frozen_string_literal: true</span>
+
+<span class="n">source</span> <span class="s2">"https://rubygems.org"</span>
+<span class="n">gemspec</span>
+<span class="n">gem</span> <span class="s2">"jekyll-feed"</span>
+<span class="n">gem</span> <span class="s2">"jekyll-paginate"</span>
+<span class="n">gem</span> <span class="s2">"jekyll-redirect-from"</span>
+<span class="n">gem</span> <span class="s2">"jekyll-seo-tag"</span>
+<span class="n">gem</span> <span class="s2">"jekyll-sitemap"</span>
+<span class="n">gem</span> <span class="s2">"jekyll-tagging"</span>
+<span class="n">gem</span> <span class="s2">"jekyll-tagging-related_posts"</span>
+<span class="n">gem</span> <span class="s2">"kramdown-parser-gfm"</span>
+
+<span class="n">gem</span> <span class="s1">'jekyll'</span><span class="p">,</span> <span class="s1">'~&gt; 3.6'</span>
+</code></pre></div></div>
+<p>我一开始只是把<code class="language-plaintext highlighter-rouge">gem 'jekyll-algolia'</code>添加到这行代码中，导致不起效。<code class="language-plaintext highlighter-rouge">gem 'jekyll-algolia'</code>必须在<code class="language-plaintext highlighter-rouge">group :jekyll_plugins do</code>的片段中。而且，为了这样做，你<strong>无需</strong>改动本来工作良好的其他代码。</p>
+
+<h3 id="32配置_configyml">3.2配置_config.yml</h3>
+
+<p>添加如下代码：</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="c1"># _config.yml</span>
+
+<span class="na">algolia</span><span class="pi">:</span>
+  <span class="na">application_id</span><span class="pi">:</span> <span class="s">your_application_id</span>
+  <span class="na">index_name</span><span class="pi">:</span>     <span class="s">jekyll</span> <span class="c1"># 你自己在algolia中创建的index</span>
+  <span class="na">search_only_api_key</span><span class="pi">:</span> <span class="s">your_search_only_api_key</span>
+
+</code></pre></div></div>
+
+<h3 id="33配置algolia前端">3.3配置Algolia前端</h3>
+
+<p>在_includes文件夹中新建algolia.html文件，添加以下内容：</p>
+
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"https://cdn.jsdelivr.net/npm/instantsearch.js@2.10.5/dist/instantsearch.min.js"</span><span class="nt">&gt;&lt;/script&gt;</span>
+<span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"https://cdn.jsdelivr.net/npm/moment@2.24.0/moment.min.js"</span><span class="nt">&gt;&lt;/script&gt;</span>
+<span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">"stylesheet"</span> <span class="na">type=</span><span class="s">"text/css"</span> <span class="na">href=</span><span class="s">"https://cdn.jsdelivr.net/npm/instantsearch.js@2.10.5/dist/instantsearch.min.css"</span><span class="nt">&gt;</span>
+<span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">"stylesheet"</span> <span class="na">type=</span><span class="s">"text/css"</span> <span class="na">href=</span><span class="s">"https://cdn.jsdelivr.net/npm/instantsearch.js@2.10.5/dist/instantsearch-theme-algolia.min.css"</span><span class="nt">&gt;</span>
+<span class="nt">&lt;script&gt;</span>
+<span class="kd">const</span> <span class="nx">search</span> <span class="o">=</span> <span class="nx">instantsearch</span><span class="p">({</span>
+  <span class="na">appId</span><span class="p">:</span> <span class="dl">'</span><span class="s1">{{ site.algolia.application_id }}</span><span class="dl">'</span><span class="p">,</span>
+  <span class="na">apiKey</span><span class="p">:</span> <span class="dl">'</span><span class="s1">{{ site.algolia.search_only_api_key }}</span><span class="dl">'</span><span class="p">,</span>
+  <span class="na">indexName</span><span class="p">:</span> <span class="dl">'</span><span class="s1">{{ site.algolia.index_name }}</span><span class="dl">'</span><span class="p">,</span>
+  <span class="na">routing</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+  <span class="nx">searchFunction</span><span class="p">(</span><span class="nx">helper</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="nx">container</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">querySelector</span><span class="p">(</span><span class="dl">'</span><span class="s1">#search-hits</span><span class="dl">'</span><span class="p">);</span>
+    <span class="nx">container</span><span class="p">.</span><span class="nx">style</span><span class="p">.</span><span class="nx">display</span> <span class="o">=</span> <span class="nx">helper</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">query</span> <span class="o">===</span> <span class="dl">''</span> <span class="p">?</span> <span class="dl">'</span><span class="s1">none</span><span class="dl">'</span> <span class="p">:</span> <span class="dl">''</span><span class="p">;</span>
+
+    <span class="nx">helper</span><span class="p">.</span><span class="nx">search</span><span class="p">();</span>
+  <span class="p">}</span>
+<span class="p">});</span>
+
+<span class="kd">const</span> <span class="nx">hitTemplate</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">hit</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kd">let</span> <span class="nx">date</span> <span class="o">=</span> <span class="dl">''</span><span class="p">;</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">hit</span><span class="p">.</span><span class="nx">date</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">date</span> <span class="o">=</span> <span class="nx">moment</span><span class="p">.</span><span class="nx">unix</span><span class="p">(</span><span class="nx">hit</span><span class="p">.</span><span class="nx">date</span><span class="p">).</span><span class="nx">format</span><span class="p">(</span><span class="dl">'</span><span class="s1">Y-M-D</span><span class="dl">'</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="kd">let</span> <span class="nx">url</span> <span class="o">=</span> <span class="s2">`{{ site.baseurl }}</span><span class="p">${</span><span class="nx">hit</span><span class="p">.</span><span class="nx">url</span><span class="p">}</span><span class="s2">#</span><span class="p">${</span><span class="nx">hit</span><span class="p">.</span><span class="nx">anchor</span><span class="p">}</span><span class="s2">`</span><span class="p">;</span>
+
+  <span class="kd">const</span> <span class="nx">title</span> <span class="o">=</span> <span class="nx">hit</span><span class="p">.</span><span class="nx">_highlightResult</span><span class="p">.</span><span class="nx">title</span><span class="p">.</span><span class="nx">value</span><span class="p">;</span>
+
+  <span class="kd">let</span> <span class="nx">breadcrumbs</span> <span class="o">=</span> <span class="dl">''</span><span class="p">;</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">hit</span><span class="p">.</span><span class="nx">_highlightResult</span><span class="p">.</span><span class="nx">headings</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">breadcrumbs</span> <span class="o">=</span> <span class="nx">hit</span><span class="p">.</span><span class="nx">_highlightResult</span><span class="p">.</span><span class="nx">headings</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">match</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="s2">`&lt;span class="post-breadcrumb"&gt;</span><span class="p">${</span><span class="nx">match</span><span class="p">.</span><span class="nx">value</span><span class="p">}</span><span class="s2">&lt;/span&gt;`</span>
+    <span class="p">}).</span><span class="nx">join</span><span class="p">(</span><span class="dl">'</span><span class="s1"> &gt; </span><span class="dl">'</span><span class="p">)</span>
+  <span class="p">}</span>
+
+  <span class="kd">const</span> <span class="nx">content</span> <span class="o">=</span> <span class="nx">hit</span><span class="p">.</span><span class="nx">_highlightResult</span><span class="p">.</span><span class="nx">html</span><span class="p">.</span><span class="nx">value</span><span class="p">;</span>
+
+  <span class="k">return</span> <span class="s2">`
+    &lt;div class="post-item"&gt;
+      &lt;span class="post-meta"&gt;</span><span class="p">${</span><span class="nx">date</span><span class="p">}</span><span class="s2">&lt;/span&gt;
+      &lt;h2&gt;&lt;a class="post-link" href="</span><span class="p">${</span><span class="nx">url</span><span class="p">}</span><span class="s2">"&gt;</span><span class="p">${</span><span class="nx">title</span><span class="p">}</span><span class="s2">&lt;/a&gt;&lt;/h2&gt;
+      {{#breadcrumbs}}&lt;a href="</span><span class="p">${</span><span class="nx">url</span><span class="p">}</span><span class="s2">" class="post-breadcrumbs"&gt;</span><span class="p">${</span><span class="nx">breadcrumbs</span><span class="p">}</span><span class="s2">&lt;/a&gt;{{/breadcrumbs}}
+      &lt;div class="post-snippet"&gt;</span><span class="p">${</span><span class="nx">content</span><span class="p">}</span><span class="s2">&lt;/div&gt;
+    &lt;/div&gt;
+  `</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="nx">search</span><span class="p">.</span><span class="nx">addWidget</span><span class="p">(</span>
+  <span class="nx">instantsearch</span><span class="p">.</span><span class="nx">widgets</span><span class="p">.</span><span class="nx">searchBox</span><span class="p">({</span>
+    <span class="na">container</span><span class="p">:</span> <span class="dl">'</span><span class="s1">#search-searchbar</span><span class="dl">'</span><span class="p">,</span>
+    <span class="na">placeholder</span><span class="p">:</span> <span class="dl">'</span><span class="s1">Search into posts...</span><span class="dl">'</span><span class="p">,</span>
+    <span class="na">poweredBy</span><span class="p">:</span> <span class="kc">true</span> <span class="c1">// This is required if you're on the free Community plan</span>
+  <span class="p">})</span>
+<span class="p">);</span>
+
+<span class="nx">search</span><span class="p">.</span><span class="nx">addWidget</span><span class="p">(</span>
+  <span class="nx">instantsearch</span><span class="p">.</span><span class="nx">widgets</span><span class="p">.</span><span class="nx">hits</span><span class="p">({</span>
+    <span class="na">container</span><span class="p">:</span> <span class="dl">'</span><span class="s1">#search-hits</span><span class="dl">'</span><span class="p">,</span>
+    <span class="na">templates</span><span class="p">:</span> <span class="p">{</span>
+      <span class="na">item</span><span class="p">:</span> <span class="nx">hitTemplate</span>
+    <span class="p">}</span>
+  <span class="p">})</span>
+<span class="p">);</span>
+
+<span class="nx">search</span><span class="p">.</span><span class="nx">start</span><span class="p">();</span>
+<span class="nt">&lt;/script&gt;</span>
+
+<span class="nt">&lt;style&gt;</span>
+<span class="nc">.ais-search-box</span> <span class="p">{</span>
+  <span class="nl">max-width</span><span class="p">:</span> <span class="m">100%</span><span class="p">;</span>
+  <span class="nl">margin-bottom</span><span class="p">:</span> <span class="m">15px</span><span class="p">;</span>
+  <span class="nl">font-size</span><span class="p">:</span><span class="m">1em</span><span class="p">;</span>
+  <span class="nl">box-shadow</span><span class="p">:</span> <span class="m">0</span> <span class="m">10px</span> <span class="m">30px</span> <span class="n">rgba</span><span class="p">(</span><span class="m">0</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span> <span class="m">0.15</span><span class="p">);</span>
+  <span class="nl">border-radius</span><span class="p">:</span> <span class="m">6px</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="nc">.post-item</span> <span class="p">{</span>
+  <span class="nl">margin-bottom</span><span class="p">:</span> <span class="m">30px</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="nc">.post-link</span> <span class="nc">.ais-Highlight</span> <span class="p">{</span>
+  <span class="nl">color</span><span class="p">:</span> <span class="m">#2a7ae2</span><span class="p">;</span>
+  <span class="nl">font-style</span><span class="p">:</span> <span class="nb">normal</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="nc">.post-breadcrumbs</span> <span class="p">{</span>
+  <span class="nl">color</span><span class="p">:</span> <span class="m">#424242</span><span class="p">;</span>
+  <span class="nl">display</span><span class="p">:</span> <span class="nb">block</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="nc">.post-breadcrumb</span> <span class="p">{</span>
+  <span class="nl">font-weight</span><span class="p">:</span> <span class="nb">bold</span><span class="p">;</span>
+  <span class="nl">font-size</span><span class="p">:</span> <span class="m">18px</span><span class="p">;</span>
+  <span class="nl">color</span><span class="p">:</span> <span class="m">#424242</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="nc">.post-breadcrumb</span> <span class="nc">.ais-Highlight</span> <span class="p">{</span>
+  <span class="nl">font-weight</span><span class="p">:</span> <span class="nb">bold</span><span class="p">;</span>
+  <span class="nl">font-style</span><span class="p">:</span> <span class="nb">normal</span><span class="p">;</span>
+  <span class="nl">color</span><span class="p">:</span> <span class="m">#2a7ae2</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="nc">.post-snippet</span> <span class="nc">.ais-Highlight</span> <span class="p">{</span>
+  <span class="nl">font-style</span><span class="p">:</span> <span class="nb">normal</span><span class="p">;</span>
+  <span class="nl">background</span><span class="p">:</span> <span class="no">yellow</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="nc">.post-snippet</span> <span class="nt">img</span> <span class="p">{</span>
+  <span class="nl">display</span><span class="p">:</span> <span class="nb">none</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="nc">.ais-search-box--input</span><span class="p">{</span>
+  <span class="nl">transition</span><span class="p">:</span> <span class="n">box-shadow</span> <span class="m">.4s</span> <span class="n">ease</span><span class="p">,</span><span class="n">background</span> <span class="m">.4s</span> <span class="n">ease</span><span class="p">,</span><span class="n">-webkit-box-shadow</span> <span class="m">.4s</span> <span class="n">ease</span><span class="p">;</span>
+    <span class="nl">display</span><span class="p">:</span> <span class="n">inline-block</span><span class="p">;</span>
+    <span class="nl">margin</span><span class="p">:</span> <span class="m">0</span> <span class="m">12px</span> <span class="m">12px</span> <span class="m">0</span><span class="p">;</span>
+    <span class="nl">background</span><span class="p">:</span> <span class="m">#f5f5f500</span><span class="p">;</span>
+    <span class="nl">border</span><span class="p">:</span> <span class="m">1px</span> <span class="nb">solid</span> <span class="n">rgba</span><span class="p">(</span><span class="m">0</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span> <span class="m">0.15</span><span class="p">);</span>
+    <span class="nl">border-radius</span><span class="p">:</span> <span class="m">6px</span><span class="p">;</span>
+    <span class="nl">box-shadow</span><span class="p">:</span> <span class="m">0</span> <span class="m">10px</span> <span class="m">30px</span> <span class="n">rgba</span><span class="p">(</span><span class="m">0</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span> <span class="m">0.15</span><span class="p">);</span>
+    <span class="nl">transition</span><span class="p">:</span> <span class="n">all</span> <span class="m">0.23s</span> <span class="n">ease-in-out</span> <span class="m">0s</span><span class="p">;</span>
+    <span class="nl">line-height</span><span class="p">:</span> <span class="m">1.7</span><span class="p">;</span>
+    <span class="nl">color</span><span class="p">:</span> <span class="m">#202020</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="nt">&lt;/style&gt;</span>
+
+</code></pre></div></div>
+
+<p>你可以自行修改某些样式。</p>
+
+<h3 id="34引入algolia搜索部件">3.4引入Algolia搜索部件</h3>
+
+<p>方法同简单本地搜索类似，在根目录新建search.md文件，添加如下内容：</p>
+
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">"search-searchbar"</span><span class="nt">&gt;&lt;/div&gt;</span>
+
+<span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"post-list"</span> <span class="na">id=</span><span class="s">"search-hits"</span><span class="nt">&gt;</span>
+<span class="nt">&lt;/div&gt;</span>
+{% include algolia.html %}
+
+</code></pre></div></div>
+
+<p>当然，你可以将其放置在任何你先要展现搜索的模版文件中，比如在archive.html或tags.html中。不必单独成页。</p>
+
+<h3 id="35在本地运行测试">3.5在本地运行测试</h3>
+
+<p>执行以下代码：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">ALGOLIA_API_KEY</span><span class="o">=</span><span class="s1">'your_admin_api_key'</span> bundle <span class="nb">exec </span>jekyll algolia
+</code></pre></div></div>
+
+<p>假设你<strong>本来</strong>在本地运行良好，你将看到官方文档的效果：</p>
+
+<p><img src="https://community.algolia.com/jekyll-algolia/assets/images/getting-started-ff88ef93194e04687d7f08079df54ce9.gif" alt="algolia" /></p>
+
+<p>假设你<strong>本来</strong>就没有本地运行过，你可能需要想办法成功运行，因为这似乎为在Vercel上使用Algolia所必须。</p>
+
+<p>通常，如果你不使用任何像Algolia这类插件，你完全可以在Vercel部署你来自Github仓库的网站，在你提交数据后，Vercel会自动给你建构并发布，并不需要Github建构，后者只需要存储代码。</p>
+
+<p>但是，现在为了使用Algolia，你需要至少上传一次_site文件夹，否则就会出现如下错误提示，而这就需要本地运行jekyll，以生成_site文件夹。</p>
+
+<p><img src="/img/2022-07-16/1.png" alt="vercel jekyll" /></p>
+
+<h3 id="36在vercel上配置">3.6在Vercel上配置</h3>
+
+<p>假设你在本地成功运行Jekyll。现在请提交一次代码，这将把你在本地构建的网页传送到Vercel。Vercel如果成功建构，则继续在Vercel上的配置。在build command选项中填入如下命令：</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>jekyll build &amp; <span class="nv">ALGOLIA_API_KEY</span><span class="o">=</span><span class="s1">'your_admin_api'</span> jekyll algolia
+</code></pre></div></div>
+
+<p><img src="/img/2022-07-16/2.png" alt="Vercel jekyll" /></p>
+
+<p>这段代码与Algolia官方文档建议的不同，增加了<code class="language-plaintext highlighter-rouge">jekyll build &amp;</code>；若不增加，每次提交代码，Vercel每次只向Algolia推送记录，而不建构新的代码，导致网站的输出网页会一直是你上一次本地运行后提交的。</p>
+
+<p><strong>这是关键的一步</strong>。你当然也可以一直使用本地运行，不再使用Vercel的建构功能。</p>
+
+<p>如何判断配置好Vercel的build命令，正常运行呢？</p>
+
+<ul>
+  <li>改动你的某个post，推送数据，等待Vercel建构结果；</li>
+  <li>查看网页是否发生了该变动；</li>
+  <li>如果有，则运行良好，<strong>此时可以删除_site文件夹内的所有数据</strong>（不包括该文件夹）；</li>
+  <li>如果没有，则需要继续排查；</li>
+  <li>如果始终失败，你可以选择每次本地运行，然后推送给Vercel的方法。</li>
+</ul>
+
+<p>至此，如果顺利，你应该成功在自己部署于Vercel上的Jekyll网站上用上了Algolia。</p>
+
+<p>其效果如下：</p>
+
+<p><img src="https://res.cloudinary.com/mkyos/image/upload/v1657968534/vercel-jekyll/4_ynhp04.gif" alt="vercl jekyll algolia" /></p>
+
+<h2 id="4结语">4.结语</h2>
+
+<p>要点概览：</p>
+
+<ol>
+  <li>在Netlify上使用Algolia，关键要在前端代码前<a href="/algolia-jekyll-blog.html#2在netlify上使用algolia">添加选择器代码</a>。</li>
+  <li>
+    <p>在Vercel上使用Algolia，执行以下关键步骤：</p>
+
+    <ul>
+      <li>本地运行测试jekyll，建构成功后将数据推送给Vercel；</li>
+      <li>若Vercel建构成功，则配置<a href="/algolia-jekyll-blog.html#36在vercel上配置">Build Command</a>；</li>
+      <li>终止本地jekyll运行，改动任意文章，推送数据给Vercel；</li>
+      <li>检查Vercel是否成功建构，验证网页是否反映该变动；</li>
+      <li>若成功，则清空_site文件夹中的数据；</li>
+      <li>像过去一样正常使用Vercel；</li>
+      <li>若始终不能反映该变动，则依赖本地运行jekyll，或者选择Netlify。</li>
+    </ul>
+  </li>
+</ol>
+
+<p>Netlify上的Algolia显得更现代，显示结果更直接了当；相比之下，Vercel所使用的jekyll-algolia插件显得很传统，显示结果与网站融为一体。前者有利于<strong>访客</strong>快捷查找，后者则特别有利于<strong>读者</strong>慢慢探索。</p>
+
+<p>此外，Netlify上的Algolia只建立很少的链接的索引，而Vercel所使用的jekyll-algolia插件为每一段都建立索引；在我的网站上，前者的索引数量不到100，后者则达2000以上；一个重要的区别就是，前者点击搜索结果只跳到文章，而后者则跳到具体的段落。</p>
+
+<p>如果你不在乎Netlify稍微慢的网速，可以直接使用Netlify的Algolia，这会方便很多。</p>
+
+<p>最后，关于请求的计算，请参考<a href="https://www.algolia.com/doc/faq/accounts-billing/what-is-a-usage-unit/?utm_medium=page_link&amp;utm_source=dashboard">官方文档</a>。</p>
+
+<p>目前，假设你搜索“博客”，则至少请求5次；如果删除重新输入，则还要浪费2次；如果输入错误了，还会继续浪费请求。每键入一个字母，执行1次请求。所以，如果实在不够用，请回到本地搜索。</p>
+
+<p>如果你遇到了问题，可以在下方给我留言。</p>]]></content><author><name></name></author><category term="博客" /><summary type="html"><![CDATA[在Vercel上设置Algolia的关键的步骤。]]></summary></entry><entry><title type="html">博客是件玩具</title><link href="http://localhost:4000/a-blog-is-a-toy.html" rel="alternate" type="text/html" title="博客是件玩具" /><published>2021-11-08T00:00:00+08:00</published><updated>2021-11-08T00:00:00+08:00</updated><id>http://localhost:4000/a-blog-is-a-toy</id><content type="html" xml:base="http://localhost:4000/a-blog-is-a-toy.html"><![CDATA[<h2 id="我玩博客还是博客玩我">我玩博客还是博客玩我？</h2>
+
+<p>我至今不完全明白为什么有那么一群人要费力建独立博客。似乎在绝大部分博客生命历程中，博主都将80%以上的时间用来折腾域名、服务器、前端，然后用15%以上的时间来逛其他人的博客，像探险和寻宝一样，看看别人的博客会做出什么样子来。</p>
+
+<p>我知道，每个人在开始之前都信誓旦旦，要为创作做准备，并且想象自己的博客在互联网海洋中被当作新大陆发现。许多人又疯狂做SEO。一大批活得较好的网站居然是教人如何做SEO和服务器优化的。有些人还梦想在博客上写作赚钱。然而现实是，与博客有关的赚钱网站是那些卖主题和插件的。</p>
+
+<p>人是不能有太多自由的，因为选择过多导致忧郁。自由导致不完美。这似乎是一个诅咒：你永远不会觉得自己的网站不再需要任何变动，因为你有自由，你会永远“使它完善”下去。“我正在使它完善”，这是自由带来的一个幻象。我想，如果上帝造人，那么它独自承担了大部分“人类不完善”的烦恼。</p>
+
+<p>如果你在一个平台上写作，不完美和自由都会得到拯救。字体太大？没这个特效？搜索不是全文？没关系，如果你选择了平台，你将不会在意这些。因为没有了自由，许多不完美就不会出现。</p>
+
+<p>迄今为止我在这方面得到的最大教训是：<strong>独立博客是互联网写作的敌人</strong>。如果一个人单纯想在互联网上写作，他绝对不应当建立独立博客。为写作而搭建网站，就像为写书而亲自造纸一样。</p>
+
+<p>最好是在别人建立的平台上写作。我所说的平台是没有无聊审查的平台，诸如WordPress.com、Ghost(pro)、Typlog这样的平台。它们与独立博客唯一的区别是，博客的基础设施都是建好了的，用户只需要购买这些服务，然后专心写作。你再也不用为你的网站的那几十毫秒TTFB的优化而废寝忘食了，难道你每次做这些时，不想扇自己嘴巴子？</p>
+
+<p>一位老朋友说的好，“<a href="https://www.savouer.com/6525.html">博客才是我最好的玩具</a>”。当我们坦诚这一点，把当伟大互联网作家的抱负和责任丢掉，整个人都轻松下来。我们承认就是为了玩耍，我们折腾博客，就像别人打《英雄联盟》。至于写作，那只是一个附带的产品，或者说，只是这件玩具上一抹闪亮的点缀。</p>
+
+<p>然而，转念一想，就算我们把博客当作玩具，却不得不承认，博客已经把我们牢牢控制。这道理和玩其他游戏是一样的。我们玩游戏，越是沉浸其中，越是受其支配。</p>
+
+<p>如果人生是一场游戏，为了金钱、为了荣誉、为了权力、为了肉欲、为了真理，只要我们深深地爱着它们，我们就不可避免地成为它们的奴隶。</p>
+
+<p>所以，当我一时冲动想销毁整个博客时，想到这也就释然了。别人在逛夜店，而我在倒腾服务器。就是这样，总需要在业余时间，让脑袋放松一下。</p>
+
+<h2 id="为自己写和为他人写">为自己写和为他人写?</h2>
+
+<p>以前写了几年的博客，没有任何读者，而我也不在乎，纯粹是一个公开的笔记。这次重新倒腾起来，本想写一些有趣的文章。</p>
+
+<p><a href="https://pathos.page/blogging-write-for-others-vs-write-for-yourself.html">我曾在为自己写和为他人写两种博客写作方向上犹豫</a>。<strong>所谓为自己写，关键的一点是，要写那些在写之前不清楚的东西。所谓为他人写，关键的一点是，要写那些在写之前就完全搞明白的东西。</strong>一种是探索式的，一种是教学式的。</p>
+
+<p>我发觉只有当我写第一种文章时，才有足够的耐心。通过写这样的文章，我极大地澄清了自己的思想。这非常非常有用，所以，试着写自己有模糊想法但还不太清楚的东西吧。作为对照，当我觉得一件事已经搞明白，就没有写作欲望。为什么我要花那么多时间来向别人介绍我已经完全明白的东西？我没有那种表现自己清晰、通透、有秩序、一针见血，并顺便点拨下“读了点理论”、“读了点哲学”、“脑子不太清晰”、“充满理论惊喜”的“初学者”的心情。那种姿态是Q特有的，我不欣赏也学不来。作为他眼中那样的“初学者”，我希望自己的文章是我试错的园地，我会踩着一个错误进入另一个错误。</p>
+
+<p>我一向不愿意宣传自己的博客，尤其不想让任何知道我的姓名的人知道我有个博客。一方面，我不只想把自己写的思想片断只存放在硬盘里，另一方面，我又不想去社交软件上招徕读者：“快看，我有一个博客，上面有你关心的话题！”我只想让我的博客淹没于浩瀚的互联网海洋中，被陌生人不期而遇。</p>
+
+<h2 id="原来域名是种心情">原来域名是种心情</h2>
+
+<p>我又换了域名。老实说，我不是什么“玉米”，虽然我确实比以前更关心我的域名是什么。有人把个人博客的域名当作在互联网上的一个门牌号，有人当作昵称，有人将其当作心情！心情一变，就要换域名，就像过去要在QQ上改签名。也许每个域名只代表了某一时刻的心情和冲动。</p>
+
+<p>我这次更换域名却不是要更换个心情，但着实被一些状况搞得很没心情。</p>
+
+<p>自从把博客程序从WordPress切换到Ghost，我就被一个问题折磨着：后台的post列表载入太慢，每次都需要二十秒左右才能完成，编辑文章时，经常遇到服务器掉线的问题。为了解决这个问题，我做了许多的猜想：是否我的服务器发生了错误？是否Ghost在这个方面就是比WordPress慢？是否AWS免费账户的EC2性能受限？是否EC2比同配置Lightsail的性能要差？</p>
+
+<p>我先后在新的实例上重新安装，甚至用GCP来对照：相同的配置下，在WordPress和Ghost之间做对照，又在Ghost和Ghost之间做对照。</p>
+
+<p>问题竟出在 .cn 域名上。我发现，在相同配置的EC2上运行一个 .cn 和 .com 网站，post列表的载入速度居然有天壤之别。我怀疑AWS对 .cn 域名的性能暗中做了限制。后来我又怀疑我的代理软件对 .cn 域名的网速做了限制。</p>
+
+<p>经过一系列的测试，我最终确定：第一，AWS东京区下载速度十分十分慢(尽管它在大陆的ping值表现是最好的)；第二，我的代理软件不会为 .cn 域名加速，但会为 .cn 之外的任何域名加速；第三，Ghost的post列表每次载入需要重新下载，至少需要50kb/s的速度，而这在WordPress上是不存在的。</p>
+
+<p>说到第三点，敬请Ghost的开发者注意，别再吹牛了。<a href="https://ghost.org/vs/wordpress/">你声称Ghost比WordPress快19倍</a>，说打开一个WordPress网站后，你已经打开了19个Ghost网站。事实上，你不但比WordPress的内存占有多120%，post列表载入没有任何缓存，而且给你反应问题，傲慢粗暴的回应让人哭笑不得。</p>
+
+<p><img src="https://res-4.cloudinary.com/mkyos/image/upload/q_auto/v1/blog-images/ghost-feedback.png" alt="img" /></p>
+
+<p>我果断解除了对AWS东京区的迷信，把博客搬到了加利福尼亚北部区，然后更换了一个非 .cn 域名，pathos.page。在这之后，我的烦恼解除了。</p>
+
+<p>.page这个顶级域名是谷歌管理的，注册数量十分稀少。 .page 的百度收录量只有119000个网页，而其中 liam.page，一个专注于LaTex技术分享的网站，就占了27900个网页，另外是一个色情网站，估计占据了几乎所有剩余的收录量。 谷歌的收录量也只有9840000个，都可谓“羽量级”了。不过， .page 不会像 .xyz 那样，初始购买价格很低，导致从事违反活动的网站选择它作为临时域名。同样作为非主流域名，为了避免与色情和赌博网站为伍，被它们损坏域名声誉，还是避免选择首年贱价注册的域名。</p>
+
+<p>我猜测，AWS的东京区一定是被各种用来做代理服务器的人玩坏了。东京、首尔、香港、台湾、新加坡等等这些区域，构成了一个围绕着某巨型局域网的边缘网络，局域网中人们有着巨大的需求。一些低性能的服务器，比如t系列，就成了这种局面的牺牲品。</p>
+
+<h2 id="备案与个人表达">备案与个人表达</h2>
+
+<p>网站遇到问题的那几天，就想过干脆把网站搬到国内。趁着双十一，在阿里云买了可三年99元续费的2核2G的服务器。</p>
+
+<p>研究备案后才真正明白并不适宜。首先网站名称这一关就很难让我接受。不能是各种涉及行业、商业和机构的名称也就罢了，不能是全英文，不能和域名一样，有的省份对于个人网站只能写“张三的博客”这种形式，有的省份则要求不得出现任何“博客”字样。</p>
+
+<p>更令人苦笑的是，有人提到自己的网站被检查后要求整改，原因是其中包含了搜索框。看起来，备案制度对于个人网站的设想就是，在网络上写写私人心情，千万不要与其他人有什么互动，所以不能出现留言框，不能提供订阅服务，不能谈论任何严肃主题。</p>
+
+<p>我想象了下审查员看到我的网站会发出的质问：“个人网站只用来写写私人心情，你写‘正义’什么的，好像不合适吧。”潜台词：“要不去咱们的审查代理人——豆瓣、知乎、微信公众号——上来写吧，不容易‘把握不住’。”</p>
+
+<p>也罢，都是混口饭吃，这些职员看了你有一些关键词，自己也把握不好，也深怕你“把握不住”，索性“防患于未然”，这我也都能理解。于是，备案这个事情，就且行且珍惜，随他去吧。</p>
+
+<h2 id="我辛苦写好了文章还要花钱发给人看">我辛苦写好了文章还要花钱发给人看？</h2>
+
+<p>我搬迁到Ghost，一个很大的原因是被其内置的Newsletter功能所吸引。我想象着通过它能够和我的读者建立密切的联系。现在我的想法发生了一些改变。</p>
+
+<p>发送邮件是需要付费的，每1000封0.8美元。假如我有1000个订阅者，且我一个月写4篇，那么一个月的邮件发送费用就达3美元之多。虽然我不会有1000个订阅者，但想到这个问题，还是有些不舒服：<strong>为什么我辛苦写好文章还要花钱送别人看？</strong></p>
+
+<p>我错误理解Newsletter这个东西了。它是一个商业行为，花钱招揽读者，不是为了做慈善。如果没有营利需求，一个人难道只是出于虚荣就每次花钱把文章送到别人眼前？Newsletter的真正需要者是那些出版商(无论是机构还是个人)，他们想要吸引读者付费订阅他们的文章。这样，花钱把文章送到读者面前，是因为读者已经为此支付了费用，只有在这样的商业逻辑下，我的心情才会舒畅起来。</p>
+
+<p>所以，我会考虑将Newsletter停用。我不大能接受“辛苦写好了文章还要花钱发给人看”这件事，何况我现在只是更多地为自己写而已。</p>
+
+<p>2021.11.8</p>]]></content><author><name></name></author><category term="博客" /><summary type="html"><![CDATA[我玩博客还是博客玩我？]]></summary></entry><entry><title type="html">为什么现在还不宜考虑 ghost？</title><link href="http://localhost:4000/why-not-consider-ghost-now.html" rel="alternate" type="text/html" title="为什么现在还不宜考虑 ghost？" /><published>2021-10-12T00:00:00+08:00</published><updated>2021-10-12T00:00:00+08:00</updated><id>http://localhost:4000/why-not-consider-ghost-now</id><content type="html" xml:base="http://localhost:4000/why-not-consider-ghost-now.html"><![CDATA[<p><img src="https://res-4.cloudinary.com/mkyos/image/upload/q_auto/v1/blog-images/website-on-ghost.png" alt="img" /></p>
+
+<p>要问我为什么？ghost比wordpress好吗？不是。ghost现在对于普通用户来说一点也不友好，它没有搜索功能，不提供评论系统，Newsletter(时事通讯)功能也刚刚脱离实验室阶段。现在，一个运行ghost的<strong>博客网站</strong>(注意，不是“<strong>在线出版网站</strong>”)就像一个孤岛。将wordpress迁移到ghost，我感觉我要与老朋友们失去联系，再也不能与他们轻松互动。</p>
+
+<p>事实上，ghost已经朝着相当不同于wordpress的方向发展。根据创立者2018年的<a href="https://blog.ghost.org/5/">一篇文章</a>，它越来越朝着专业化和商业化——ghost自身的专业化、目标用户的商业化——的方向进展。</p>
+
+<p>在ghost的最初阶段，创立者曾对此有过犹豫，他试图把ghost这个去中心化、开源的在线出版程序打造得与中心化、闭源的Medium一样易用，比如，用户可以通过简单的几个步骤就将algolia添加到ghost上，享受后者强大的搜索服务。但是，他放弃了，因为他觉得，即使ghost为用户提供十分简单的框架，普通用户还是不懂得如何从algolia那里获得API Key，这些操作依然足以吓退他们。所以，他干脆转向“专业”用户。似乎，在他看来，所谓“专业用户”，是至少能够承受ghost那烦琐的调试和安装压力的人，且没有“下限”。ghost越来越不是我们期待中的博客系统。此外，它的运营机构现在很挣钱，月营收已经达到了8万多美元，创立5年，累计营收300万美元，而且，从一开始就盈利！</p>
+
+<p>我在<a href="https://www.producthunt.com/posts/ghost-4-0?bc=1">ghost的Producthunt主页</a>上看到创立者 O’Nolan 自己的长篇评论，于是不由得也回复了一大段给他，翻译为中文，部分如下：</p>
+
+<blockquote>
+  <p>亲爱的O’Nolan先生，感谢你的伟大产品！当你打算在producthunt的产品页面上发表如此长的评论时，你应该感到你是多么需要评论系统。也许你甚至没有感觉到，因为producthunt自然地为你提供了它。然而，ghost用户就没有这么幸运了。你会发现，大多数运行ghost的网站都没有评论系统，除了一些运营者觉得自己不需要评论系统之外，一个重要的原因是，众所周知，任何一个不起眼的博客系统，都会努力提供评论系统，而ghost却没有。除了评论系统之外，搜索功能也是如此。如果我听到ghost并想在producthunt了解下它，但在producthunt却找不到任何搜索框，这将是多么令人沮丧，甚至愤怒的事情。我也曾为ghost感到沮丧，甚至恼怒。最近，我在官方博客上读了你的文章，我越来越理解你了。你谈到了ghost在开发去中心化的开源软件时面临的困难选择，你明确提到你曾想让普通用户通过简单的设置就能获得像algolia这样的伟大服务。然而，你放弃了，认为即使这样，普通用户也不会成功，所以你转向了 “专业”用户。我们知道，在Wordpress上，只需一个插件和一些复制和粘贴操作，用户就可以享受到algolia的伟大服务，而Wordpress也是去中心化的开源软件。在所谓的普通用户和 “专业”用户之间也是有许多中间阶段的。我看到，许多人绞尽脑汁想在他们的ghost网站上添加一个搜索按钮，但无济于事。官方文件是如此的粗糙，以至于毫无用处！ 事实上，“专业用户”很难被定义，我见过许多人，他们足够专业，试图在他们的博客上添加一个可用的搜索框，但几乎无一例外地失败。</p>
+</blockquote>
+
+<p>除了上面宏观的产品战略外，一个相对微观的技术策略是，<strong>ghost希望保持足够的灵活和开放，它希望所有的这些基础功能，都能由相应的细分领域的产品提供</strong>。搜索、评论、Newsletter、统计分析，等等等等。只是，它为自己没有提供搜索、评论等基础功能所提供的理由实在勉强。事实上，wordpress.com的官方插件Jetpack提供开箱即用的Newsletter功能。ghost不会说wordpress比自己还灵活。</p>
+
+<p>Newsletter是最为吸引我的。这几年，电子邮件作为古老的通讯手段，受到人们的重视。通过Newsletter，<strong>作家</strong>可以独立自由地维护读者关系，而<strong>读者</strong>则可以主动的筛选信息来源，而不是接受铺天盖地的“算法推送”。但是，大部分国人对此还没有什么概念。他们沉浸在抖音、头条、知乎和B站等中心化的网站中。邮件订阅给国人的普遍印象，还是商业营销手段，而不是出版工具。在可预见的时期内，Newsletter出版不会在中国壮大，原因是众所周知的。</p>
+
+<p>尽管如此，我仍觉得我需要它，或者，我想尝试它，把玩下它。ghost的邮件简洁漂亮，与之相比，Jetpack略显土气。我知道我可能没有什么订阅者。我的老朋友们，可以轻松地用inoreader等程序来管理RSS订阅。我只是有一点点幻想，经过好多年，由于我持续制造了对于我的领域内的人还算有用的东西，会收获那么十几个或几十个订阅。</p>
+
+<p>设置ghost的Newsletter对我的挑战是巨大的。我在ghost和Mailgun上分别执行了一切操作，但就是无法成功发送邮件。我在互联网上看到大量的询问和抱怨，他们不知道问题出在了哪里。最后我发现，原来我的Mailgun账户尚未成功激活！我没有激活，却在控制面板上看不到任何提示，即使执行了那么多操作！没有激活，是因为，最初我申请Mailgun时，没有通过短信验证那一关。过了一段时间，我发现能够成功登录，并且能够“正常”使用，竟然忘了这一点。认识到这个问题后，我给Mailgun的客服发了一封邮件，很快就收到回复，他(她)为我激活了账户。于是，我的ghost的newsleter活了！</p>
+
+<p>ghost的定位为<strong>在线出版程序</strong>，或许可以说，它是CMS的一个细分领域。ghost以Newsletter为媒介，为独立作家提供在线发布、读者维护和营收管理的框架，为未来的出版潮流推波助澜。如果你也需要这么一个东西，那么你可以尝试它。邮箱设置的困难已被克服，与algolia的整合，未来应该会有很大的进展，评论系统也是这样。如果考虑了以上问题后，你仍觉得你需要ghost，那么可以尝试它，如果遇到什么困难，请不要犹豫联系我。</p>
+
+<p>最后，如果你只是想尝试Newsletter，你完全可以在wordpress上借助Jetpack轻松实现，开箱即用！按照一个博客程序的标准来评价的话，ghost现在还像一个不能看时间的Apple Watch。再给它一点时间；或许需要更多时间。</p>
+
+<p>2021.10.12</p>]]></content><author><name></name></author><category term="博客" /><summary type="html"><![CDATA[ghost的定位是在线出版程序，而不是通用CMS。它希望保持足够的灵活，所有的基础功能由更细分领域的其他产品提供。就一个博客程序而言，由于没有提供搜索和评论等基础功能，ghost目前就像一个不能看时间的Apple Watch 。]]></summary></entry><entry><title type="html">域名见闻录</title><link href="http://localhost:4000/domain-name-information.html" rel="alternate" type="text/html" title="域名见闻录" /><published>2021-10-07T00:00:00+08:00</published><updated>2021-10-07T00:00:00+08:00</updated><id>http://localhost:4000/domain-name-information</id><content type="html" xml:base="http://localhost:4000/domain-name-information.html"><![CDATA[<p>最近几天想给我的博客换个域名。我原先的博客域名monist.xyz，是在namecheap上注册的。monist是我当时读罗素时熟悉的，<em>Mind</em>或<em>The Monist</em>是两个哲学刊物。不用说，mind这个词应该被注册完了，于是尝试monist。还好monist算是一个比较生僻的词，虽然是一个简单的单词，不至于被完全被抢注。namecheap推荐了monist.xyz。我大概查了下.xyz这个顶级域名，就看到它的注册局员工到处吹嘘这个域名好。本来我也并不在意这些，我只想知道这个域名是不是一个还算“正常”的域名。</p>
+
+<p>顺带，我把网站的标题也改成了“一元论者”。严格地说，我并不是什么一元论者，我不能为这个哲学立场提供一个详细而周到的说明。虽然，我可以粗略地说，在内心深处，我对这个世界的根本理解是一元论的。尽管如此，身处一个二元论者的世界，为了理解他们，也为了与他们沟通，我的思考和言说又必须是二元论的。当然，这是题外话了。</p>
+
+<p>域名和网站标题，最好是有极大的相关性。博客嘛，每天打开自己网站最多的恐怕还是自己。这就使得域名变得重要。有一个好看、顺眼、有意义的域名，是博客站长们的小小心愿。</p>
+
+<p>我决心更换掉.xyz域名，是从一个发现开始的。我发现，在百度搜索<code class="language-plaintext highlighter-rouge">site:.xyz</code>，得到的结果基本上是一度垃圾网站，许多色情网站，排在了首页。我想到一些色情诈骗软件的分发网站地址也是以.xyz结尾的。</p>
+
+<p>我的网站，从七月初建站依赖，百度蜘蛛就来了大概两三次。我记得，九月来了一次后，就连续一个月也没有再来过。百度曾明确建议，不要使用一些廉价的非主流域名，否则会延迟收录。现在看来，不是延迟收录的问题那么简单。</p>
+
+<p>我对百度是否收录我的网站没那么太在意。鉴于我的内容和主题以及百度的排名策略，即使我的网页全部被收录，也不大可能有什么权重。倒是谷歌，一再地展示我的网站。当然，谷歌也总是展示那一两个流行词。换言之，谷歌认为我的大部分网页是没有什么价值的。</p>
+
+<p>咱做个小站，为的是有自己一方小天地，就算看到了谷歌的展示关键词，也懒得动手多写几篇该关键词的文章。</p>
+
+<p>但要说完全不在意，那也不真诚。既然不是写私密日志，当然希望更多的阅读和回应。我不能忍受自己与一堆色情和垃圾网站为伍，而且，诸如.xyz这样的新兴廉价域名的滥用，在十年内恐怕不能改变。</p>
+
+<p>在可预见的时间内，.com将维持其支配性地位，这就是非主流域名无法做大的最大原因。正是顶级域名的多样化，导致了.com二手交易价格的持续增高。在众多选择之中，商家，包括注册商和域名投资者，必须要在一两个顶级域名上下赌注，把它们的价值炒作起来。将顶级域名的价值分散在多样化的顶级域名中是他们最不想看到的，因为那会使得所有顶级域名都不值钱。资本主义的一个门道是认为控制某项资源的供给，以使其提升“价值”。土地就是典型的例子。一般的域名使用者，一定程度上，也乐于看到这种集中趋势的维持和扩张。因为，既然钱有时候对于他们不是问题，他们希望某个顶级域名相比其他顶级域名更有声誉，并且用钱就能直接得到。</p>
+
+<p>把.com持续做起来，是域名多样化后的一个可以理解的趋势。商业的动机扮演了至关重要的作用。投资者，他们不关心任何域名的价值——.xyz何以比.com的价值低？——他们关心的是价格，并将其伪装成价值。价值，说到底也是大众行为聚合的结果：大家普遍愿意出价多少，决定了某件东西的价值。绝不可以把这个事情理解为，因为.com在本质上比.xyz有价值，所以它的价格才那么高。</p>
+
+<p>我并没有仔细研究过域名市场。以上只是我的推断。这些推断来自我在godaddy上检索域名的经历。</p>
+
+<p>考虑换域名期间，我不时在godaddy上搜索下域名。我我曾搜索过一个域名，kliff.com，这个域名是我把cliff这个单词改造后得出的。改动字母，得出相似的、能够使人联想到原始单词的字母组合，可能是比较常见的域名注册策略吧。这当然是无奈之举。五个字符以内的，无论是单词还是非单词的字母组合，都被抢注一空了。但真的是被一般使用者抢注了吗？或者，完全是被域名投资者所为？我“拿衣服”了。</p>
+
+<p>过了大概一个月，我再次不小心搜索到kliff.com这个域名，它已经被注册，价格由120元涨到了51707元。我本应该早点知道这件事的，并且确认，到底从我搜索这个域名的多少天后，它被注册并抬价的。</p>
+
+<p>我还曾对khitay.com犹豫过一段时间。“Khitay”是“契丹”的意思，是中亚许多民族对中国的称呼。这个词有大量的相似词源成员。香港国泰航空的cathay，与其同源，是文艺复兴时期，欧洲人对中国的一个流行称呼。当时它的注册价格是普通价格。我前后检索过三五次。在大约一个星期之后(我不太确定，也许比这个时间还短)，我惊讶地发现，它的价格被抬高到了5万多！</p>
+
+<p>以上是两个典型案例。第一个是简短造词，第二个是一个简短单词！我就想知道，我搜索kliff.com这件事，是怎么被知道，以及被谁知道的？当然，没有其他人，除了godaddy。对于godaddy来说，这是用户帮它发现的漏网之鱼。它当然不好拿着词典全部自行注册了，那就等于直接做强盗了。这个域名很可能被人工评估之后，从12o元抬高了到了五万元。评估人员觉得注册者定然是想用这个富有意义的简短域名做一件大事。只是他犹豫了下，那就不好意思了！至于简短的字母组合(造词)，godaddy也是不能放过的。你会发现，godaddy把所有的五个字符以内的.com域名都抬高了价格。</p>
+
+<p>我以为这只是godaddy的障眼法。在xinnet上，我发现khitay.com确实被注册了，注册商是godaddy。在万网，也是如此。在后两个注册商那里，和godaddy一样，khitay.com不是被占用，而只是被直接抬价出售。</p>
+
+<p>域名，特别是.com的域名的价格被谁搞起来的，现在可想而知。域名投资者尚且需要投资才能牟利，其信息能力与一般使用者也没有本质区别。他们的投资甚至炒作，无可厚非。而域名注册商，可以零成本地坐地起价！似乎，它们还组成了一个价格联盟，以遮掩彼此的丑陋行径。它们把注册者的键入行为拿来分析，让注册者帮他们寻找域名抬价，简直与监守自盗没有区别。</p>
+
+<p>人们都说，.com的优质域名资源已经耗尽。在我看来，有两个基本的事实是这样的。第一，绝大多数的域名组合，实际上都没有被使用，但被占用了；第二，有相当一部分的域名组合，不是被域名投资者，而是被注册商暗中坐地起价，导致一般使用者望洋兴叹。对于第一点，在我检索的过程中，我发现几乎所有的我检索到的简短单词或造词的域名，都不在使用中，要么是跳转到另一个域名。对于第二点，注册商显然组成了一个联盟，对于短字符的域名(特别是.com)，直接抬高价格，其抬高的依据，正是大众的检索行为。</p>
+
+<p>域名管理是一项全球性的公共事业，但域名管理的实施本身却是彻底的商业勾当。这一点，中外皆然。说什么cnnic是法盲，godaddy是懂法的，讲武德的，这是天真的。</p>
+
+<p>最后，让我来解释下我的新域名。我起初奔着.com为王的原则琢磨了好久，最后将一个单词改造后，注册了一个简短.com域名。但只用了一天，就觉得这个词的意义不是我真想要的。域名是自己每天都面对的，其暗示意义很重要。</p>
+
+<p>在那之后的一个晚上，我一个机灵想到了在塞拉斯的《经验主义与心灵哲学》中读到的“ing-ed”这个造词，意为“动作-对象”，表示心灵与世界的二元结构，是经典经验主义的典型结构。这个词给我的印象很深。我至今的哲学思考，都是在二元论下进行的，尽管我对这样那样的二元论都有意见。ing和ed都是动词的后缀，这些语言学的特征，本身反映了和左右了我们对世界的思考。</p>
+
+<p>inged.com当然不出意外地被占用了。我在inged.net和inged.cn之间犹豫了好久。最终，我选择了cn。如果有一天它不安全了，我直接换个域名就好。不用想那么多了，杞人忧天而已。</p>
+
+<p>我相信，inged.cn够我用上一段时间的了。它简单又有些意义。当然，有意义这一点，我要向我亲爱的读者解释下。域名，要想被记住，有意义可能可比简短更重要。</p>
+
+<p>2021.10.7</p>]]></content><author><name></name></author><category term="博客" /><summary type="html"><![CDATA[我为何更换.xyz域名？godaddy如何坐地起价？我的网站的新域名意义是什么？]]></summary></entry><entry><title type="html">博客：为他人写vs.为自己写</title><link href="http://localhost:4000/blogging-write-for-others-vs-write-for-yourself.html" rel="alternate" type="text/html" title="博客：为他人写vs.为自己写" /><published>2021-07-22T00:00:00+08:00</published><updated>2021-07-22T00:00:00+08:00</updated><id>http://localhost:4000/blogging-write-for-others-vs-write-for-yourself</id><content type="html" xml:base="http://localhost:4000/blogging-write-for-others-vs-write-for-yourself.html"><![CDATA[<p>写给自己和写给别人很不一样。每个人的人生都与众不同，而每个人都多少有些窥私欲。我看别人的博客，会觉得津津有味，因为我不熟悉他的生活，他提供的信息超出了我对他认识的100%。但如果他看自己的博客，却未必会有我这样的感觉，因为他很熟悉自己的生活，他提供的信息也许只反映了自己认识的1%。</p>
+
+<p>如果博客专注于记录和分享自己的人生历程和领悟，就都存在这样的问题。除非认为自己的人生特别精彩，值得被许多人都知道，常常写着写着就气馁了——“我干嘛要写自己再熟悉不过的东西呢？”</p>
+
+<p>如果写一些自身之外的评论甚至小论文，就我自己的经验而言，也有这样的困扰。写一个自己完全有把握的主题让写作这件事很快变得索然无味。最愉悦的写作是一种冒险和探索。</p>
+
+<p>然而，大众读者也就只会认真阅读以上两种博文。但是，我们都更想写一些卓越而非庸常的事物，无论是故事还是理论。一个作者的本能是想把珍贵的东西展示给更多人。</p>
+
+<p>我自己过去最喜欢写那些我新进苦思冥想的主题。写这样的文章，让我感觉自己不只是为了读者做贡献，还在写作中增进自己的思想。这样的文章写完之后，我常常会反复阅读和修改，与一个真正对文章感兴趣的读者一样，读的津津有味。</p>
+
+<p>然而这样的博文恰恰连一个读者也没有。没有读者会看一个作者稍微严肃认真的想法。</p>
+
+<p>于是一个博主就面临一个抉择：<strong><em>*要么*</em></strong>为了满足读者的窥私欲，写自己的人生历程和领悟，或者对大众话题做一些无关痛痒的评论；<strong><em>*要么*</em></strong>为了满足作者的求知欲，写自己深入思考的新发现。</p>
+
+<p>2021.7.21</p>]]></content><author><name></name></author><category term="博客" /><summary type="html"><![CDATA[写给自己和写给别人很不一样。每个人的人生都与众不同，而每个人都多少有些窥私欲。我看别人的博客，会觉得津津有味，因为我不熟悉他的生活，他提供的信息超出了我对他认识的100%。但如果他看自己的博客，却未必会有我这样的感觉，因为他很熟悉自己的生活，他提供的信息也许只反映了自己认识的1%。]]></summary></entry><entry><title type="html">给WordPress的twenty fifteen主题添加暗黑模式</title><link href="http://localhost:4000/twenty-fifteen-dark-mode.html" rel="alternate" type="text/html" title="给WordPress的twenty fifteen主题添加暗黑模式" /><published>2021-07-07T00:00:00+08:00</published><updated>2021-07-07T00:00:00+08:00</updated><id>http://localhost:4000/twenty-fifteen-dark-mode</id><content type="html" xml:base="http://localhost:4000/twenty-fifteen-dark-mode.html"><![CDATA[<p>代码如下：</p>
+
+<div class="language-css highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">media</span> <span class="o">(</span><span class="nt">prefers-color-scheme</span><span class="o">:</span> <span class="nt">dark</span><span class="o">)</span><span class="p">{</span>
+    <span class="err">body</span> <span class="err">{</span>
+        <span class="nl">background-color</span><span class="p">:</span> <span class="m">#111</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="nt">pre</span><span class="o">,</span> <span class="nt">abbr</span><span class="o">[</span><span class="nt">title</span><span class="o">],</span> <span class="nt">table</span><span class="o">,</span> <span class="nt">th</span><span class="o">,</span> <span class="nt">td</span><span class="o">,</span> <span class="nt">input</span><span class="o">,</span> <span class="nt">textarea</span><span class="o">,</span> <span class="nc">.main-navigation</span> <span class="nt">ul</span><span class="o">,</span> <span class="nc">.main-navigation</span> <span class="nt">li</span><span class="o">,</span> <span class="nc">.post-navigation</span><span class="o">,</span> <span class="nc">.post-navigation</span> <span class="nt">div</span> <span class="o">+</span> <span class="nt">div</span><span class="o">,</span> <span class="nc">.pagination</span><span class="o">,</span> <span class="nc">.comment-navigation</span><span class="o">,</span> <span class="nc">.widget</span> <span class="nt">li</span><span class="o">,</span> <span class="nc">.widget_categories</span> <span class="nc">.children</span><span class="o">,</span> <span class="nc">.widget_nav_menu</span> <span class="nc">.sub-menu</span><span class="o">,</span> <span class="nc">.widget_pages</span> <span class="nc">.children</span><span class="o">,</span> <span class="nc">.site-header</span><span class="o">,</span> <span class="nc">.site-footer</span><span class="o">,</span> <span class="nc">.hentry</span> <span class="o">+</span> <span class="nc">.hentry</span><span class="o">,</span> <span class="nc">.author-info</span><span class="o">,</span> <span class="nc">.entry-content</span> <span class="nc">.page-links</span> <span class="nt">a</span><span class="o">,</span> <span class="nc">.page-links</span> <span class="o">&gt;</span> <span class="nt">span</span><span class="o">,</span> <span class="nc">.page-header</span><span class="o">,</span> <span class="nc">.comments-area</span><span class="o">,</span> <span class="nc">.comment-list</span> <span class="o">+</span> <span class="nc">.comment-respond</span><span class="o">,</span> <span class="nc">.comment-list</span> <span class="nt">article</span><span class="o">,</span> <span class="nc">.comment-list</span> <span class="nc">.pingback</span><span class="o">,</span> <span class="nc">.comment-list</span> <span class="nc">.trackback</span><span class="o">,</span> <span class="nc">.comment-list</span> <span class="nc">.reply</span> <span class="nt">a</span><span class="o">,</span> <span class="nc">.no-comments</span> <span class="p">{</span>
+        <span class="nl">border-color</span><span class="p">:</span> <span class="m">#333</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="nt">body</span><span class="nd">:before</span><span class="o">,</span> <span class="nc">.site-header</span> <span class="p">{</span>
+        <span class="nl">background-color</span><span class="p">:</span> <span class="m">#202020</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="nc">.site-header</span> <span class="p">{</span>
+        <span class="nl">background-color</span><span class="p">:</span> <span class="m">#202020</span><span class="p">;</span>
+        <span class="nl">border-bottom</span><span class="p">:</span> <span class="m">1px</span> <span class="nb">solid</span> <span class="n">rgba</span><span class="p">(</span><span class="m">51</span><span class="p">,</span> <span class="m">51</span><span class="p">,</span> <span class="m">51</span><span class="p">,</span> <span class="m">0.1</span><span class="p">);</span>
+        <span class="nl">border-bottom-width</span><span class="p">:</span> <span class="m">1px</span><span class="p">;</span>
+        <span class="nl">border-bottom-style</span><span class="p">:</span> <span class="nb">solid</span><span class="p">;</span>
+        <span class="nl">border-bottom-color</span><span class="p">:</span> <span class="n">rgba</span><span class="p">(</span><span class="m">51</span><span class="p">,</span> <span class="m">51</span><span class="p">,</span> <span class="m">51</span><span class="p">,</span> <span class="m">0.1</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="nt">body</span><span class="o">,</span> <span class="nt">blockquote</span> <span class="nt">cite</span><span class="o">,</span> <span class="nt">blockquote</span> <span class="nt">small</span><span class="o">,</span> <span class="nt">a</span><span class="o">,</span> <span class="nc">.dropdown-toggle</span><span class="nd">:after</span><span class="o">,</span> <span class="nc">.image-navigation</span> <span class="nt">a</span><span class="nd">:hover</span><span class="o">,</span> <span class="nc">.image-navigation</span> <span class="nt">a</span><span class="nd">:focus</span><span class="o">,</span> <span class="nc">.comment-navigation</span> <span class="nt">a</span><span class="nd">:hover</span><span class="o">,</span> <span class="nc">.comment-navigation</span> <span class="nt">a</span><span class="nd">:focus</span><span class="o">,</span> <span class="nc">.widget-title</span><span class="o">,</span> <span class="nc">.entry-footer</span> <span class="nt">a</span><span class="nd">:hover</span><span class="o">,</span> <span class="nc">.entry-footer</span> <span class="nt">a</span><span class="nd">:focus</span><span class="o">,</span> <span class="nc">.comment-metadata</span> <span class="nt">a</span><span class="nd">:hover</span><span class="o">,</span> <span class="nc">.comment-metadata</span> <span class="nt">a</span><span class="nd">:focus</span><span class="o">,</span> <span class="nc">.pingback</span> <span class="nc">.edit-link</span> <span class="nt">a</span><span class="nd">:hover</span><span class="o">,</span> <span class="nc">.pingback</span> <span class="nc">.edit-link</span> <span class="nt">a</span><span class="nd">:focus</span><span class="o">,</span> <span class="nc">.comment-list</span> <span class="nc">.reply</span> <span class="nt">a</span><span class="nd">:hover</span><span class="o">,</span> <span class="nc">.comment-list</span> <span class="nc">.reply</span> <span class="nt">a</span><span class="nd">:focus</span><span class="o">,</span> <span class="nc">.site-info</span> <span class="nt">a</span><span class="nd">:hover</span><span class="o">,</span> <span class="nc">.site-info</span> <span class="nt">a</span><span class="nd">:focus</span> <span class="p">{</span>
+        <span class="nl">color</span><span class="p">:</span> <span class="m">#bebebe</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="nc">.post-navigation</span><span class="o">,</span> <span class="nc">.pagination</span><span class="o">,</span> <span class="nc">.secondary</span><span class="o">,</span> <span class="nc">.site-footer</span><span class="o">,</span> <span class="nc">.hentry</span><span class="o">,</span> <span class="nc">.page-header</span><span class="o">,</span> <span class="nc">.page-content</span><span class="o">,</span> <span class="nc">.comments-area</span><span class="o">,</span> <span class="nc">.widecolumn</span> <span class="p">{</span>
+        <span class="nl">background-color</span><span class="p">:</span> <span class="m">#202020</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="nt">button</span><span class="o">,</span> <span class="nt">input</span><span class="o">,</span> <span class="nt">select</span><span class="o">,</span> <span class="nt">textarea</span> <span class="p">{</span>
+        <span class="nl">background-color</span><span class="p">:</span> <span class="m">#bebebe</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="nc">.secondary-toggle</span><span class="nd">:before</span> <span class="p">{</span>
+        <span class="nl">color</span><span class="p">:</span> <span class="m">#bebebe</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="nt">blockquote</span><span class="o">,</span> <span class="nt">a</span><span class="nd">:hover</span><span class="o">,</span> <span class="nt">a</span><span class="nd">:focus</span><span class="o">,</span> <span class="nc">.main-navigation</span> <span class="nc">.menu-item-description</span><span class="o">,</span> <span class="nc">.post-navigation</span> <span class="nc">.meta-nav</span><span class="o">,</span> <span class="nc">.post-navigation</span> <span class="nt">a</span><span class="nd">:hover</span> <span class="nc">.post-title</span><span class="o">,</span> <span class="nc">.post-navigation</span> <span class="nt">a</span><span class="nd">:focus</span> <span class="nc">.post-title</span><span class="o">,</span> <span class="nc">.image-navigation</span><span class="o">,</span> <span class="nc">.image-navigation</span> <span class="nt">a</span><span class="o">,</span> <span class="nc">.comment-navigation</span><span class="o">,</span> <span class="nc">.comment-navigation</span> <span class="nt">a</span><span class="o">,</span> <span class="nc">.widget</span><span class="o">,</span> <span class="nc">.author-heading</span><span class="o">,</span> <span class="nc">.entry-footer</span><span class="o">,</span> <span class="nc">.entry-footer</span> <span class="nt">a</span><span class="o">,</span> <span class="nc">.taxonomy-description</span><span class="o">,</span> <span class="nc">.page-links</span> <span class="o">&gt;</span> <span class="nc">.page-links-title</span><span class="o">,</span> <span class="nc">.entry-caption</span><span class="o">,</span> <span class="nc">.comment-author</span><span class="o">,</span> <span class="nc">.comment-metadata</span><span class="o">,</span> <span class="nc">.comment-metadata</span> <span class="nt">a</span><span class="o">,</span> <span class="nc">.pingback</span> <span class="nc">.edit-link</span><span class="o">,</span> <span class="nc">.pingback</span> <span class="nc">.edit-link</span> <span class="nt">a</span><span class="o">,</span> <span class="nc">.post-password-form</span> <span class="nt">label</span><span class="o">,</span> <span class="nc">.comment-form</span> <span class="nt">label</span><span class="o">,</span> <span class="nc">.comment-notes</span><span class="o">,</span> <span class="nc">.comment-awaiting-moderation</span><span class="o">,</span> <span class="nc">.logged-in-as</span><span class="o">,</span> <span class="nc">.form-allowed-tags</span><span class="o">,</span> <span class="nc">.no-comments</span><span class="o">,</span> <span class="nc">.site-info</span><span class="o">,</span> <span class="nc">.site-info</span> <span class="nt">a</span><span class="o">,</span> <span class="nc">.wp-caption-text</span><span class="o">,</span> <span class="nc">.gallery-caption</span><span class="o">,</span> <span class="nc">.comment-list</span> <span class="nc">.reply</span> <span class="nt">a</span><span class="o">,</span> <span class="nc">.widecolumn</span> <span class="nt">label</span><span class="o">,</span> <span class="nc">.widecolumn</span> <span class="nc">.mu_register</span> <span class="nt">label</span> <span class="p">{</span>
+        <span class="nl">color</span><span class="p">:</span> <span class="n">rgba</span><span class="p">(</span> <span class="m">190</span><span class="p">,</span> <span class="m">190</span><span class="p">,</span> <span class="m">190</span><span class="p">,</span> <span class="m">0.7</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="nc">.entry-footer</span> <span class="p">{</span>
+        <span class="nl">background-color</span><span class="p">:</span> <span class="m">#1b1b1b</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="nc">.main-navigation</span> <span class="nt">ul</span><span class="o">,</span> <span class="nc">.main-navigation</span> <span class="nt">li</span><span class="o">,</span> <span class="nc">.widget</span> <span class="nt">input</span><span class="o">,</span> <span class="nc">.widget</span> <span class="nt">textarea</span><span class="o">,</span> <span class="nc">.widget</span> <span class="nt">table</span><span class="o">,</span> <span class="nc">.widget</span> <span class="nt">th</span><span class="o">,</span> <span class="nc">.widget</span> <span class="nt">td</span><span class="o">,</span> <span class="nc">.widget</span> <span class="nt">pre</span><span class="o">,</span> <span class="nc">.widget</span> <span class="nt">li</span><span class="o">,</span> <span class="nc">.widget_categories</span> <span class="nc">.children</span><span class="o">,</span> <span class="nc">.widget_nav_menu</span> <span class="nc">.sub-menu</span><span class="o">,</span> <span class="nc">.widget_pages</span> <span class="nc">.children</span><span class="o">,</span> <span class="nc">.widget</span> <span class="nt">abbr</span><span class="o">[</span><span class="nt">title</span><span class="o">]</span> <span class="p">{</span>
+        <span class="nl">border-color</span><span class="p">:</span> <span class="n">rgba</span><span class="p">(</span> <span class="m">190</span><span class="p">,</span> <span class="m">190</span><span class="p">,</span> <span class="m">190</span><span class="p">,</span> <span class="m">0.1</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="nc">.secondary-toggle</span> <span class="p">{</span>
+        <span class="nl">border-color</span><span class="p">:</span> <span class="n">rgba</span><span class="p">(</span> <span class="m">190</span><span class="p">,</span> <span class="m">190</span><span class="p">,</span> <span class="m">190</span><span class="p">,</span> <span class="m">0.1</span><span class="p">);</span>
+    <span class="p">}</span>
+	<span class="nc">.entry-content</span><span class="o">,</span> <span class="nc">.entry-summary</span> <span class="p">{</span>
+	<span class="nl">color</span><span class="p">:</span><span class="m">#bebebe</span><span class="p">;</span>
+<span class="p">}</span>
+	<span class="nt">code</span><span class="p">{</span><span class="nl">color</span><span class="p">:</span><span class="m">#bebebe</span><span class="p">}</span>
+ <span class="nc">.comments-area</span><span class="o">,</span> <span class="nc">.comment-list</span> <span class="o">+</span> <span class="nc">.comment-respond</span><span class="o">,</span> <span class="nc">.comment-list</span> <span class="nt">article</span><span class="o">,</span> <span class="nc">.comment-list</span> <span class="nc">.pingback</span><span class="o">,</span> <span class="nc">.comment-list</span> <span class="nc">.trackback</span><span class="o">,</span> <span class="nc">.comment-list</span> <span class="nc">.reply</span> <span class="nt">a</span><span class="o">,</span> <span class="nc">.no-comments</span> <span class="p">{</span>
+    <span class="nl">border-color</span><span class="p">:</span> <span class="m">#555</span><span class="p">;</span>
+<span class="p">}</span>
+	<span class="nc">.author-info</span> <span class="p">{</span>
+    <span class="nl">border-color</span><span class="p">:</span> <span class="m">#555</span><span class="p">;</span>
+<span class="p">}</span>
+	<span class="nt">nav</span><span class="nc">.navigation.post-navigation</span><span class="p">{</span><span class="nl">border-color</span><span class="p">:</span><span class="m">#202020</span><span class="p">;}</span>
+	<span class="nt">footer</span><span class="nf">#colophon</span><span class="nc">.site-footer</span><span class="p">{</span><span class="nl">border-color</span><span class="p">:</span><span class="m">#202020</span><span class="p">;}</span>
+	<span class="nt">img</span> <span class="p">{</span>
+    <span class="nl">filter</span><span class="p">:</span> <span class="n">brightness</span><span class="p">(</span><span class="m">0.8</span><span class="p">);</span>
+<span class="p">}</span>
+	<span class="nt">button</span><span class="o">,</span> <span class="nt">input</span><span class="o">[</span><span class="nt">type</span><span class="o">=</span><span class="s1">"button"</span><span class="o">],</span> <span class="nt">input</span><span class="o">[</span><span class="nt">type</span><span class="o">=</span><span class="s1">"reset"</span><span class="o">],</span> <span class="nt">input</span><span class="o">[</span><span class="nt">type</span><span class="o">=</span><span class="s1">"submit"</span><span class="o">]</span> <span class="p">{</span>
+    <span class="nl">color</span><span class="p">:</span> <span class="m">#bebebe</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="err">}</span>
+</code></pre></div></div>
+
+<p>将其添加到自定义中的“额外css”中，再“发布”即可。</p>]]></content><author><name></name></author><category term="博客" /><summary type="html"><![CDATA[代码如下]]></summary></entry><entry><title type="html">在白纸上写博客不好吗？</title><link href="http://localhost:4000/write-blog-on-white-paper.html" rel="alternate" type="text/html" title="在白纸上写博客不好吗？" /><published>2021-07-06T00:00:00+08:00</published><updated>2021-07-06T00:00:00+08:00</updated><id>http://localhost:4000/write-blog-on-white-paper</id><content type="html" xml:base="http://localhost:4000/write-blog-on-white-paper.html"><![CDATA[<p>一个月来，我几乎陷入了痴狂：我拼命更换不同博客平台，纠结应该选中哪一个，每每下定决心，旋即又陷入纠结当中。建立博客好像是一件需要长远谋划的事情。我考虑到如下问题：博客未来的迁移、博客程序开发的持续性、博客访客对搜索、归档、分类的需求、博客的Newsletter等等。</p>
+
+<p>昨晚，我把所有这些事情又从头到尾想了一下，最终汇聚成这样一个问题：这些真的是我需要考虑的吗？</p>
+
+<p>就博客的长期性而已，我能坚持写5年吗？5年是个可预见的周期，任何一款相对成熟的博客程序都会被继续维护，即使不再被维护，在后续相当长的时间内，也可以继续被使用。我写过<a href="http://kmt.bitcron.com/">三四年的博客</a>，没有想要迁移，现在我只想重新开始。</p>
+
+<p>就访客需求来说，这方面的担忧就是典型的杞人忧天、庸人自扰。大多数个人博客都是短命的。它们不受商业动机驱使，往往没有明确的主题或领域，或者仅仅是泛泛而谈。读者不会在一个博客上停留太久，更不太可能产生依赖。</p>
+
+<p>现在，许多人像规划企业网站那样的规划个人博客：功能要齐全，界面要好看，经营要持续、迁移要方便，交流要方便。写作要坚持是最后考虑的一条。</p>
+
+<p>有人总结现在国人一种普遍心态：“万事具备，只差有钱”。等有钱了就可以专注学术了，等有钱了就可以孝敬父母了，等有钱了就可以做慈善了，等有钱了就可以度假了。我们想把一切都准备好再去做，而钱可能是最重要的准备。</p>
+
+<p>“等我建立一个完美的博客，就可以好好写文章了”。然而，你将永远都不能等到这一天。</p>
+
+<p>在开始写博客之前如此苦心孤诣地规划，实质是为一件即将开始的工作做完美的准备。这难道不是一种病态的工具主义吗？我们从来不能在做好完美的准备之后才付诸行动。即使要追求完美，也是针对工作本身而不是工作条件的。</p>
+
+<p>必须重新审视博客这种活动。它早已衰落，这有众所周知的原因。但是请想一想，博客当初为什么会兴起？当人人都可轻易接入网络服务时，人们希望将过去写好放在抽屉中的日记和随想放在网络上供他人欣赏。博客的实质是网络日志，它没有改变活动的本质，而只是改变了活动的形式。</p>
+
+<p>设想当初我们在白纸上写日志时，要反复考虑如下事情以至于久久不能动笔：书桌是否坚固、房间是否宽敞，笔记本是否顺笔、钢笔是否名牌、墨水是否持久……这得是一年多么滑稽的事情呢？</p>
+
+<p>在白纸上写日志的年代，没什么人会如此纠结写作条件。但是在今天，却有那么多人纠结自己博客的“百年大计”？</p>
+
+<p>博客不过是换了一种媒介而已。以前，我们在白纸上写日志，从不关心笔记本如何保存到十年后，现在同样不要关心。博客只是记录了一段成长印记和思考片断，它常常只对我们自己有用。要运营出许多人依赖的网站，我们可能无法开展自己的正式工作。每天，互联网上数以亿计的人相互访问彼此建立的网站。他们中的极个别人出于极为偶然的原因来到了这里，然后给了我们几秒时间浏览下小标题，然后永远消失在互联网的海洋中。</p>
+
+<p>在这个博客衰落的时代，博客总体上已渐渐失去了日志的本性。许多个人博客的主题是“建设博客”。“当你不知道写些什么的时候，你就写如何搭建博客。”这实质是一种空洞的“内部循序”——为了博客而博客。这就像当初我们在纸上写作时，满纸写的都是如何选择一个好钢笔一样。是时候重新回到博客最初开始的地方。像在白纸上写日子那样地写博客，不要关心未来，不好吗？</p>]]></content><author><name></name></author><category term="博客" /><summary type="html"><![CDATA[现在，许多人像规划企业网站那样的规划个人博客：功能要齐全，界面要好看，经营要持续、迁移要方便，交流要方便。写作要坚持是最后考虑的一条。]]></summary></entry></feed>
