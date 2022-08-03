@@ -1,6 +1,6 @@
 
 
-See the [demmo](https://pathos.page/).
+See the [demo](https://pathos.page/).
 
 
 1. A blog on Github Page。**若Folk，请将我的全部文章移除**。
