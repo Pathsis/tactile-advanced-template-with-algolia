@@ -6,7 +6,7 @@ timezone: Asia/Shanghai
 author: 
 theme: jekyll-theme-tactile
 baseurl:
-url: https://your-domain-name.com
+url: 
 incremental: true
 plugins:
   - jekyll-feed
