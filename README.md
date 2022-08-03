@@ -1,7 +1,4 @@
 
-![img-demo](img/readme/1.png)
-
-![img-demo](img/readme/2.png)
 
 See the [demmo](https://pathos.page/).
 
