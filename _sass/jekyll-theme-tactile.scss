@@ -14,7 +14,7 @@ dl, dt, dd, ol, ul, li,
 fieldset, form, label, legend,
 table, caption, tbody, tfoot, thead, tr, th, td,
 article, aside, canvas, details, embed,
-figure, figcaption, footer, header, hgroup,
+figure, figcaption, header, hgroup,
 menu, output, ruby, section, summary,
 time, mark, audio, video {
 	padding: 0;
@@ -344,6 +344,8 @@ dl dt {
 }
 
 footer {
+  width: 700px;
+  margin: 0 auto;
   padding-top: 20px;
   padding-bottom: 30px;
   margin-top: 80px;
@@ -356,6 +358,9 @@ footer a {
 }
 footer a:hover {
   color: #b71c1c;
+}
+img#footer_icons{
+  display: inline-block;
 }
 
 /* MISC */
