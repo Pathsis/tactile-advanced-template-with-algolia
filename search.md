@@ -6,7 +6,6 @@ permalink: /search/
 <h2>搜索</h2>
 <!-- HTML elements for search -->
 <input type="text" id="search-input" placeholder="搜索：标题、标签、时间、摘要" style="
-    transition: box-shadow .4s ease,background .4s ease,-webkit-box-shadow .4s ease;
     display: inline-block;
     margin: 0 12px 12px 0;
     background: #f5f5f500;
@@ -14,14 +13,13 @@ permalink: /search/
     border-radius: 6px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
     transition: all 0.23s ease-in-out 0s;
-    line-height: 1.7;
     color: #202020;
     max-width: 100%;
     margin-bottom: 15px;
-    padding: 0.5rem 0.75rem;
+    padding: 0.3rem 0.5rem;
     font-size: 1rem;
-    line-height: 1.7;
-    width: 325px;
+    line-height: 1.5;
+    width: 340px;
     "/>
 
 <ul id="results-container"></ul>
