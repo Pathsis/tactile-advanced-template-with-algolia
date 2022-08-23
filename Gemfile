@@ -11,7 +11,7 @@ gem "jekyll-tagging"
 gem "jekyll-tagging-related_posts"
 gem "kramdown-parser-gfm"
 
-gem 'jekyll', '~> 3.6'
+gem 'jekyll', '~> 4.0'
 
 group :jekyll_plugins do
   gem 'jekyll-algolia', '~> 1.0'
