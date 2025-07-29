@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-ruby "3.2.2"
+ruby "~> 3.2.x"
 source "https://rubygems.org"
 gemspec
 gem "jekyll-feed"
